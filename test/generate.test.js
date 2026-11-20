@@ -197,6 +197,25 @@ test('the AI client sends the right request and reads the answer', async () => {
   assert.equal(seen.init.headers['x-api-key'], 'test-key');
   assert.equal(seen.body.model, 'test-model');
 
+  assert.deepEqual(seen.body.thinking, { type: 'disabled' });
+  assert.equal(seen.body.max_tokens, 1500);
+
+  // A model that refuses the "answer straight away" request is asked again the plain way.
+  const bodies = [];
+  const picky = createAi({
+    apiKey: 'k',
+    fetchImpl: async (url, init) => {
+      const b = JSON.parse(init.body);
+      bodies.push(b);
+      if (b.thinking) return { ok: false, status: 400 };
+      return { ok: true, status: 200, json: async () => ({ content: [{ type: 'thinking', thinking: 'hmm' }, { type: 'text', text: '{"reply":"Second go.","tags":[]}' }] }) };
+    },
+  });
+  const again = await picky.writeReply({ facts: '', tweetText: '', line: '', used: [], length: '', angle: '', pool: [] });
+  assert.deepEqual(again, { reply: 'Second go.', tags: [] });
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[1].thinking, undefined);
+
   const failing = createAi({ apiKey: 'k', fetchImpl: async () => ({ ok: false, status: 529 }) });
   await assert.rejects(() => failing.writeReply({ facts: '', tweetText: '', line: '', used: [], length: '', angle: '', pool: [] }), /529/);
 });
