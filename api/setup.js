@@ -4,7 +4,7 @@
 
 import { build, settings } from '../lib/app.js';
 import { createAi } from '../lib/ai.js';
-import { finishReply } from '../lib/reply.js';
+import { finishReply, parseAnswer } from '../lib/reply.js';
 import facts from '../project-facts.js';
 import replySettings from '../crier-settings.js';
 
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       try {
         const ai = createAi({ apiKey: s.aiKey, model: s.aiModel, base: process.env.ANTHROPIC_API_BASE || undefined });
         const pool = [...replySettings.extraTags, ...replySettings.approvedMentions];
-        const answer = await ai.writeReply({
+        const raw = await ai.ask({
           facts,
           tweetText: 'Something is stirring at the Gateway tonight.',
           line: 'What do you think is coming through?',
@@ -52,11 +52,11 @@ export default async function handler(req, res) {
           angle: 'ask the project a genuine, curious question about what the tweet shows or says',
           pool,
         });
-        const sample = finishReply(answer, { alwaysTag: replySettings.alwaysTag, pool });
+        const sample = finishReply(parseAnswer(raw.text), { alwaysTag: replySettings.alwaysTag, pool });
         lines.push(
           sample
             ? `7. Generate reply: ready (AI model ${s.aiModel}). Sample reply: ${sample}`
-            : `7. Generate reply: NOT READY - the AI answered, but not in a form The Crier could use.`,
+            : `7. Generate reply: NOT READY - the AI answered, but not in a form The Crier could use. [stop: ${raw.stopReason}; parts: ${raw.kinds.join(',')}; text: ${raw.text.slice(0, 300)}]`,
         );
       } catch (err) {
         lines.push(`7. Generate reply: NOT READY - ${err.message}`);

@@ -23,8 +23,10 @@ function fakeTelegramServer() {
       const params = body ? JSON.parse(body) : {};
       if (req.url === '/v1/messages') {
         // Stand-in AI: the first two answers are the same on purpose.
-        const n = aiCalls.push(params);
-        const reply = n <= 2 ? 'Same words for two people.' : `Fresh words number ${n}.`;
+        // The setup page's own sample request is answered apart and not counted.
+        const isSetupSample = JSON.stringify(params).includes('Something is stirring at the Gateway');
+        const n = isSetupSample ? 99 : aiCalls.push(params);
+        const reply = isSetupSample ? 'Setup sample.' : n <= 2 ? 'Same words for two people.' : `Fresh words number ${n}.`;
         res.setHeader('content-type', 'application/json');
         return res.end(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ reply, tags: ['#DigiNFTs', '#Boomerverse'] }) }] }));
       }
@@ -98,7 +100,7 @@ test('end to end: setup page, drop, I\'m in, edit, unpin timer, wrong secrets re
     assert.equal(res.code, 200, res.body);
     assert.match(res.body, /The Crier is set up\./);
     assert.match(res.body, /@RiftCrierBot/);
-    assert.match(res.body, /7\. Generate reply: ready/);
+    assert.match(res.body, /7\. Generate reply: ready \(AI model claude-haiku-5-5\)\. Sample reply: Setup sample\. #TheRiftBorn #DigiNFTs #Boomerverse/);
     const [wh] = fake.of('setWebhook');
     assert.equal(wh.url, 'https://crier.example/api/telegram');
     assert.equal(wh.secret_token, 'hook-secret');
