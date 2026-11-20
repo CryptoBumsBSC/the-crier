@@ -1,0 +1,4 @@
+{
+  "functions": { "api/telegram.js": { "maxDuration": 60 } },
+  "crons": [{ "path": "/api/cron", "schedule": "*/5 * * * *" }]
+}
