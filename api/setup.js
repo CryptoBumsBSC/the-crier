@@ -3,6 +3,10 @@
 // It creates the tables and connects The Crier to Telegram.
 
 import { build, settings } from '../lib/app.js';
+import { createAi } from '../lib/ai.js';
+import { finishReply } from '../lib/reply.js';
+import facts from '../project-facts.js';
+import replySettings from '../crier-settings.js';
 
 export default async function handler(req, res) {
   res.setHeader('content-type', 'text/plain; charset=utf-8');
@@ -32,7 +36,32 @@ export default async function handler(req, res) {
     lines.push(`4. Approved X accounts: ${s.approved.map((h) => '@' + h).join(', ')}.`);
     lines.push(`5. Owner: ${s.owners.map((h) => '@' + h).join(', ')}.`);
     lines.push(`6. Unpin timer: ${s.cronSecret ? 'ready.' : 'NOT READY - the CRON_SECRET setting is missing.'}`);
-    lines.push(`7. Generate reply: ${s.aiKey ? `ready (AI model ${s.aiModel}).` : 'OFF - the ANTHROPIC_API_KEY setting is missing. Everything else works.'}`);
+    if (!s.aiKey) {
+      lines.push('7. Generate reply: OFF - the ANTHROPIC_API_KEY setting is missing. Everything else works.');
+    } else {
+      // Ask the AI for one sample reply, so a wrong key or model name shows up here and not in front of members.
+      try {
+        const ai = createAi({ apiKey: s.aiKey, model: s.aiModel, base: process.env.ANTHROPIC_API_BASE || undefined });
+        const pool = [...replySettings.extraTags, ...replySettings.approvedMentions];
+        const answer = await ai.writeReply({
+          facts,
+          tweetText: 'Something is stirring at the Gateway tonight.',
+          line: 'What do you think is coming through?',
+          used: [],
+          length: 'one short sentence',
+          angle: 'ask the project a genuine, curious question about what the tweet shows or says',
+          pool,
+        });
+        const sample = finishReply(answer, { alwaysTag: replySettings.alwaysTag, pool });
+        lines.push(
+          sample
+            ? `7. Generate reply: ready (AI model ${s.aiModel}). Sample reply: ${sample}`
+            : `7. Generate reply: NOT READY - the AI answered, but not in a form The Crier could use.`,
+        );
+      } catch (err) {
+        lines.push(`7. Generate reply: NOT READY - ${err.message}`);
+      }
+    }
     lines.push('', 'The Crier is set up.');
     return res.status(200).send(lines.join('\n'));
   } catch (err) {
