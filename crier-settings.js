@@ -6,7 +6,7 @@ export default {
   alwaysTag: '#TheRiftBorn',
 
   // Two of these are added to every generated reply. The AI picks the two that fit best.
-  extraTags: ['#TheRiftNFTs', '#InvestingInSurvival', '#DigiNFTs', '#Boomerverse', '#AussieBoomer', '#NFTCommunity', '#NFTs'],
+  extraTags: ['#Genesis333', '#Boomerverse', '#AussieBoomer', '#TheRiftNFTs', '#WildlifeConservation', '#InvestingInSurvival', '#DigiNFTs', '#NFTCommunity', '#NFTs'],
 
   // X accounts that may be tagged in place of a hashtag. Only add accounts that are
   // yours or that have agreed. Example: ['@Boomer_Au']
