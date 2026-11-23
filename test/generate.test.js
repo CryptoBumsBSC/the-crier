@@ -33,7 +33,7 @@ test('the tidy post gets a sixth button, "Generate reply", that opens a private 
   const { tg } = await dropped({ ai: fakeAi([A('x')]) });
   const markup = tg.of('editMessageReplyMarkup').at(-1).reply_markup;
   const labels = markup.inline_keyboard.flat().map((b) => b.text);
-  assert.deepEqual(labels, ['❤️ Like', '🔁 Repost', '✍️ Quote', '💬 Comment', '✨ Generate reply', "✅ I'm in"]);
+  assert.deepEqual(labels, ['❤️ Like', '🔁 Repost', '✍️ Quote', '💬 Comment', '✨ Generate reply', '✨ Generate quote', "✅ I'm in"]);
   assert.equal(markup.inline_keyboard[2][0].url, `https://t.me/RiftCrierBot?start=r${Math.abs(GROUP)}_5000`);
 });
 

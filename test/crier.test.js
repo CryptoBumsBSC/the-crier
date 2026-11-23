@@ -167,13 +167,14 @@ test('24 hours: still pinned at 23 hours, unpinned after 24, never unpinned twic
   await crier.handleUpdate(msg(OWNER, TWEET));
 
   advanceHours(23);
-  assert.deepEqual(await crier.runCron(), { due: 0, unpinned: 0 });
+  // At 23 hours the reminder goes out (see extras.test.js). The post stays pinned.
+  assert.deepEqual(await crier.runCron(), { due: 0, unpinned: 0, reminded: 1 });
 
   advanceHours(1);
-  assert.deepEqual(await crier.runCron(), { due: 1, unpinned: 1 });
+  assert.deepEqual(await crier.runCron(), { due: 1, unpinned: 1, reminded: 0 });
   assert.deepEqual(tg.of('unpinChatMessage'), [{ chat_id: GROUP, message_id: 5000 }]);
 
-  assert.deepEqual(await crier.runCron(), { due: 0, unpinned: 0 });
+  assert.deepEqual(await crier.runCron(), { due: 0, unpinned: 0, reminded: 0 });
 });
 
 test('if the post was deleted, the unpin timer gives up instead of retrying forever', async () => {
@@ -182,8 +183,8 @@ test('if the post was deleted, the unpin timer gives up instead of retrying fore
   });
   await crier.handleUpdate(msg(OWNER, TWEET));
   advanceHours(25);
-  assert.deepEqual(await crier.runCron(), { due: 1, unpinned: 0 });
-  assert.deepEqual(await crier.runCron(), { due: 0, unpinned: 0 });
+  assert.deepEqual(await crier.runCron(), { due: 1, unpinned: 0, reminded: 0 });
+  assert.deepEqual(await crier.runCron(), { due: 0, unpinned: 0, reminded: 0 });
 });
 
 test('the "pinned a message" notice for a Crier post is cleaned up', async () => {

@@ -188,19 +188,56 @@ test('end to end: setup page, drop, I\'m in, edit, unpin timer, wrong secrets re
 
     res = fakeRes();
     await cron({ headers: { authorization: 'Bearer cron-secret' } }, res);
-    assert.deepEqual(res.body, { due: 0, unpinned: 0 });
+    assert.deepEqual(res.body, { due: 0, unpinned: 0, reminded: 0 });
+
+    // Generate quote: a third member asks for a quote. It is stored as a quote, apart from replies.
+    await hook({ update_id: 70, message: { message_id: 970, chat: { id: 503, type: 'private' }, from: { id: 503 }, text: `/start q${Math.abs(GROUP)}_${postId}` } });
+    const quoteMsg = fake.of('sendMessage').at(-1);
+    assert.equal(quoteMsg.chat_id, 503);
+    assert.match(quoteMsg.text, /^Your quote\. Tap it to copy:/);
+    assert.match(quoteMsg.reply_markup.inline_keyboard[0][0].url, /^https:\/\/x\.com\/intent\/tweet\?url=/);
+    assert.equal(await store.countRepliesBy(GROUP, postId, 503, 'quote'), 1);
+    assert.equal(await store.countRepliesBy(GROUP, postId, 503, 'reply'), 0);
+    assert.equal(await store.countRepliesBy(GROUP, postId, 501), 1);
+
+    // Owner report, in the owner's private chat.
+    await hook({ update_id: 71, message: { message_id: 971, chat: { id: 1, type: 'private' }, from: { id: 1, username: 'aussieboomer' }, text: '/crier report' } });
+    const report = fake.of('sendMessage').at(-1);
+    assert.equal(report.chat_id, 1);
+    assert.match(report.text, /Tweets dropped: 1\n/);
+    assert.match(report.text, /"I'm in" taps: 12\n/);
+    assert.match(report.text, /Replies written: 2\n/);
+    assert.match(report.text, /Quotes written: 1\n/);
+    assert.match(report.text, /Replies and quotes written: 3 of 300\n/);
 
     const pgmod = await import('pg');
     const direct = new pgmod.default.Client({ connectionString: DB });
     await direct.connect();
+
+    // Reminder: with 5 hours of pin left, one reminder goes out under the post. Never a second one.
+    await direct.query(`update crier_posts set pinned_until = now() + interval '5 hours' where chat_id = $1`, [GROUP]);
+    res = fakeRes();
+    await cron({ headers: { authorization: 'Bearer cron-secret' } }, res);
+    assert.deepEqual(res.body, { due: 0, unpinned: 0, reminded: 1 });
+    const reminder = fake.of('sendMessage').at(-1);
+    assert.equal(reminder.text, '⏰ 12 members are in. Still time to join.');
+    assert.deepEqual(reminder.reply_parameters, { message_id: postId });
+    const reminderId = (await store.getPost(GROUP, postId)).reminder_message_id;
+    assert.ok(reminderId > postId);
+    res = fakeRes();
+    await cron({ headers: { authorization: 'Bearer cron-secret' } }, res);
+    assert.deepEqual(res.body, { due: 0, unpinned: 0, reminded: 0 });
+
     await direct.query(`update crier_posts set pinned_until = now() - interval '1 minute' where chat_id = $1`, [GROUP]);
     await direct.end();
 
     res = fakeRes();
     await cron({ headers: { authorization: 'Bearer cron-secret' } }, res);
-    assert.deepEqual(res.body, { due: 1, unpinned: 1 });
+    assert.deepEqual(res.body, { due: 1, unpinned: 1, reminded: 0 });
     assert.deepEqual(fake.of('unpinChatMessage'), [{ chat_id: GROUP, message_id: postId }]);
     assert.equal((await store.getPost(GROUP, postId)).unpinned, true);
+    // The reminder is taken away with the pin.
+    assert.deepEqual(fake.of('deleteMessage').at(-1), { chat_id: GROUP, message_id: reminderId });
   } finally {
     await store.close();
     fake.server.close();

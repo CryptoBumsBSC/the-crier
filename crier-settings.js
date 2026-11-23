@@ -1,4 +1,4 @@
-// SETTINGS FOR "GENERATE REPLY"
+// SETTINGS FOR "GENERATE REPLY", "GENERATE QUOTE" AND THE REMINDER
 // Edit the values, keep the punctuation, and save.
 
 export default {
@@ -15,6 +15,14 @@ export default {
   // How many replies one member can generate for one tweet.
   repliesPerMemberPerTweet: 3,
 
-  // The most replies The Crier writes in any 24 hours, across all groups. Caps the AI cost.
+  // How many quotes one member can generate for one tweet.
+  quotesPerMemberPerTweet: 3,
+
+  // The most replies and quotes (added together) The Crier writes in any 24 hours,
+  // across all groups. Caps the AI cost.
   repliesPerDay: 300,
+
+  // The reminder: how many hours before the unpin The Crier posts one line under the post,
+  // such as "14 members are in. Still time to join." Use 0 to switch the reminder off.
+  reminderHoursBeforeUnpin: 6,
 };
