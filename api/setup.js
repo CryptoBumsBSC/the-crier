@@ -52,7 +52,7 @@ export default async function handler(req, res) {
           angle: 'ask the project a genuine, curious question about what the tweet shows or says',
           pool,
         });
-        const sample = finishReply(parseAnswer(raw.text), { alwaysTag: replySettings.alwaysTag, pool });
+        const sample = finishReply(parseAnswer(raw.text), { alwaysTag: replySettings.alwaysTag, pool, extraMax: 0, inline: true });
         lines.push(
           sample
             ? `7. Generate reply: ready (AI model ${s.aiModel}). Sample reply: ${sample}`

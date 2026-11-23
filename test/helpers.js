@@ -52,6 +52,9 @@ export async function setup(opts = {}) {
       alwaysTag: '#TheRiftBorn',
       extraTags: ['#TheRiftNFTs', '#DigiNFTs', '#Boomerverse'],
       approvedMentions: [],
+      // 10 out of 10, so the tests get the same tags every time.
+      replyTagOutOfTen: opts.replyTagOutOfTen ?? 10,
+      quoteExtraTagOutOfTen: opts.quoteExtraTagOutOfTen ?? 10,
       repliesPerMemberPerTweet: 3,
       repliesPerDay: opts.perDay ?? 300,
       getBotUsername: async () => opts.botUsername ?? null,

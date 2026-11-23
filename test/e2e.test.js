@@ -100,7 +100,7 @@ test('end to end: setup page, drop, I\'m in, edit, unpin timer, wrong secrets re
     assert.equal(res.code, 200, res.body);
     assert.match(res.body, /The Crier is set up\./);
     assert.match(res.body, /@RiftCrierBot/);
-    assert.match(res.body, /7\. Generate reply: ready \(AI model claude-haiku-5-5\)\. Sample reply: Setup sample\. #TheRiftBorn #DigiNFTs #Boomerverse/);
+    assert.match(res.body, /7\. Generate reply: ready \(AI model claude-haiku-5-5\)\. Sample reply: Setup sample\. #TheRiftBorn$/m);
     const [wh] = fake.of('setWebhook');
     assert.equal(wh.url, 'https://crier.example/api/telegram');
     assert.equal(wh.secret_token, 'hook-secret');
@@ -155,7 +155,7 @@ test('end to end: setup page, drop, I\'m in, edit, unpin timer, wrong secrets re
     assert.equal(given.length, 2);
     assert.equal(new Set(given).size, 2);
     assert.equal(given.filter((g) => g.startsWith('Same words for two people.')).length, 1);
-    for (const g of given) assert.match(g, / #TheRiftBorn #DigiNFTs #Boomerverse$/);
+    for (const g of given) assert.match(g, /\. #TheRiftBorn$/);
     assert.equal(fake.aiCalls[0].model, 'claude-haiku-5-5');
     assert.equal(await store.countRepliesBy(GROUP, postId, 501), 1);
     assert.equal(await store.countRepliesSince(new Date(Date.now() - 60000)), 2);

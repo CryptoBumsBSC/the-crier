@@ -10,8 +10,8 @@ A Telegram bot that calls out new tweets in a group, with two-tap buttons.
 4. Edit feature: the owner or a group admin replies to the tidy post with `edit` and the new line.
 5. The post is pinned for 24 hours, then The Crier unpins it.
 6. The Crier only works in groups the owner added it to. Added by anyone else, it leaves.
-7. Generate reply: a button on the tidy post opens a private chat with The Crier. The Crier writes one unique reply for that member, about that tweet, ending with `#TheRiftBorn` plus two more tags. The member taps the reply to copy it, or taps "Post this reply on X". No two members get the same reply for a tweet.
-8. Generate quote: the button beside Generate reply. The Crier writes one unique line for a member who quotes the tweet (shares it to their own followers), with the same tags. The member taps the quote to copy it, or taps "Post this quote on X". Each member can have 3 quotes per tweet, on top of their 3 replies.
+7. Generate reply: a button on the tidy post opens a private chat with The Crier. The Crier writes one unique reply for that member, about that tweet. 8 replies out of 10 carry `#TheRiftBorn` and no other tag; the rest carry no tag. The member taps the reply to copy it, or taps "Post this reply on X". No two members get the same reply for a tweet.
+8. Generate quote: the button beside Generate reply. The Crier writes one unique line for a member who quotes the tweet (shares it to their own followers), always with `#TheRiftBorn`, and half the time with one extra tag from the list. The member taps the quote to copy it, or taps "Post this quote on X". Each member can have 3 quotes per tweet, on top of their 3 replies.
 9. Reminder: 6 hours before the unpin, The Crier posts one line under the tidy post, such as "14 members are in. Still time to join." The reminder is removed when the post is unpinned.
 10. Owner report: the owner types `/crier report` in the private chat with The Crier. The Crier answers with the tweets dropped, the "I'm in" taps, the replies and the quotes written in the last 7 days, and the replies and quotes written in the last 24 hours out of the daily cap. Nobody else can get the report.
 
@@ -34,7 +34,7 @@ The Crier never signs in to X and uses no paid X access. It never posts on X. Me
 ## Two files the owner can edit
 
 - `project-facts.js` - the fact sheet. The AI knows only what is written here, plus the tweet.
-- `crier-settings.js` - the tags, the 3-replies and 3-quotes-per-member limits, the daily cap of 300 replies and quotes added together, and the reminder time (6 hours before the unpin; 0 switches the reminder off).
+- `crier-settings.js` - the tags and how often they are added, the 3-replies and 3-quotes-per-member limits, the daily cap of 300 replies and quotes added together, and the reminder time (6 hours before the unpin; 0 switches the reminder off).
 
 ## Go live
 

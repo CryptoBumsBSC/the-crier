@@ -45,14 +45,14 @@ test('with the AI switched off, there is no "Generate reply" button and the othe
   assert.equal(tg.of('editMessageText').at(-1).reply_markup.inline_keyboard.flat().length, 5);
 });
 
-test('a member taps Generate reply: gets one reply ending with #TheRiftBorn plus two tags, ready to copy', async () => {
+test('a member taps Generate reply: gets one reply ending with #TheRiftBorn and no other tag, ready to copy', async () => {
   const ai = fakeAi([A('That stare from Veyra could stop a road train.')]);
   const { tg, crier } = await dropped({ ai });
   assert.equal(await crier.handleUpdate(dm(MEMBER, START)), 'generate:sent');
 
   const sent = tg.of('sendMessage').at(-1);
   assert.equal(sent.chat_id, MEMBER.id);
-  const reply = 'That stare from Veyra could stop a road train. #TheRiftBorn #DigiNFTs #Boomerverse';
+  const reply = 'That stare from Veyra could stop a road train. #TheRiftBorn';
   assert.ok(sent.text.includes(`<code>${reply}</code>`));
   assert.match(sent.text, /Replies left for this tweet: 2/);
   const [postBtn] = sent.reply_markup.inline_keyboard[0];
@@ -127,7 +127,7 @@ test('if the AI is down, the member is told to try again and nothing is counted'
   assert.equal(await store.countRepliesBy(GROUP, 5000, MEMBER.id), 0);
 });
 
-test('tags: always #TheRiftBorn plus exactly two from the list, whatever the AI sends back', () => {
+test('tags, first release shape (still used when the settings ask for it): #TheRiftBorn plus exactly two from the list', () => {
   const cfg = { alwaysTag: '#TheRiftBorn', pool: ['#TheRiftNFTs', '#DigiNFTs', '#Boomerverse', '@Boomer_Au'], rand: () => 0 };
   const tagsOf = (s) => s.match(/[#@]\w+/g);
 

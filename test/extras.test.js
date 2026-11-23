@@ -128,14 +128,14 @@ test('quote: a member gets a quote, with the tags, and a button that opens a quo
   const sent = tg.of('sendMessage').at(-1);
   assert.equal(sent.chat_id, MEMBER.id);
   assert.match(sent.text, /^Your quote\. Tap it to copy:/);
-  assert.match(sent.text, /Have a look at what is waking up at the Gateway\. #TheRiftBorn #DigiNFTs #Boomerverse/);
+  assert.match(sent.text, /Have a look at what is waking up at the Gateway\. #TheRiftBorn #DigiNFTs<\/code>/);
   assert.match(sent.text, /Quotes left for this tweet: 2$/);
   const [postBtn] = sent.reply_markup.inline_keyboard[0];
   assert.equal(postBtn.text, '✍️ Post this quote on X');
   const url = new URL(postBtn.url);
   assert.equal(url.origin + url.pathname, 'https://x.com/intent/tweet');
   assert.equal(url.searchParams.get('url'), TWEET);
-  assert.equal(url.searchParams.get('text'), 'Have a look at what is waking up at the Gateway. #TheRiftBorn #DigiNFTs #Boomerverse');
+  assert.equal(url.searchParams.get('text'), 'Have a look at what is waking up at the Gateway. #TheRiftBorn #DigiNFTs');
   assert.equal(url.searchParams.get('in_reply_to'), null);
   assert.equal(sent.reply_markup.inline_keyboard[1][0].callback_data, `gq:${GROUP}:5000`);
 });
@@ -265,4 +265,64 @@ test('report: nobody but the owner can get it, and it is never sent in a group',
   assert.equal(await crier.handleUpdate(dm(ADMIN, '/crier report')), 'private');
   assert.equal(await crier.handleUpdate(msg(OWNER, '/crier report')), 'ignored:no-tweet');
   assert.equal(tg.of('sendMessage').length, before);
+});
+
+// ---------- Fewer tags ----------
+
+const TAGS = { alwaysTag: '#TheRiftBorn', pool: ['#DigiNFTs', '#Boomerverse', '#TheRiftNFTs'] };
+const tagsIn = (s) => s.match(/[#@]\w+/g) || [];
+
+test('fewer tags: a reply carries #TheRiftBorn only, never a second tag', () => {
+  const out = finishReply({ reply: 'That stare could stop a road train.', tags: ['#DigiNFTs', '#Boomerverse'] }, { ...TAGS, extraMax: 0, inline: true });
+  assert.equal(out, 'That stare could stop a road train. #TheRiftBorn');
+});
+
+test('fewer tags: about 8 replies in 10 carry the tag, the rest carry none', () => {
+  const cfg = { ...TAGS, extraMax: 0, tagChance: 0.8, inline: true };
+  assert.equal(finishReply({ reply: 'Ripper.', tags: [] }, { ...cfg, rand: () => 0.79 }), 'Ripper. #TheRiftBorn');
+  assert.equal(finishReply({ reply: 'Ripper.', tags: [] }, { ...cfg, rand: () => 0.81 }), 'Ripper.');
+  let withTag = 0;
+  for (let i = 0; i < 2000; i++) if (tagsIn(finishReply({ reply: 'Ripper.', tags: [] }, cfg)).length) withTag++;
+  assert.ok(withTag > 1500 && withTag < 1700, `${withTag} of 2000`);
+});
+
+test('fewer tags: when the words say "the Rift Born", those words become the tag and nothing is added at the end', () => {
+  const cfg = { ...TAGS, extraMax: 0, inline: true };
+  assert.equal(finishReply({ reply: 'Can not wait to see what the Rift Born do next.', tags: [] }, cfg), 'Can not wait to see what #TheRiftBorn do next.');
+  assert.equal(finishReply({ reply: 'Rift Born never miss.', tags: [] }, cfg), '#TheRiftBorn never miss.');
+  assert.equal(finishReply({ reply: 'Only the first one changes: the Rift Born, the Rift Born.', tags: [] }, cfg), 'Only the first one changes: #TheRiftBorn, the Rift Born.');
+  // "my Rift Born" would read wrongly as a tag, so the tag goes at the end.
+  assert.equal(finishReply({ reply: 'Proud of my Rift Born today.', tags: [] }, cfg), 'Proud of my Rift Born today. #TheRiftBorn');
+  // A reply that carries no tag is left as the AI wrote it.
+  assert.equal(finishReply({ reply: 'What the Rift Born do next is anyone\'s guess.', tags: [] }, { ...cfg, tagChance: 0.8, rand: () => 0.9 }), "What the Rift Born do next is anyone's guess.");
+});
+
+test('fewer tags: a quote always carries #TheRiftBorn, plus one extra tag half the time, never two', () => {
+  const cfg = { ...TAGS, extraMax: 1, extraChance: 0.5, inline: true, limit: QUOTE_LIMIT };
+  const a = { reply: 'Have a look at this one.', tags: ['#DigiNFTs', '#Boomerverse'] };
+  assert.equal(finishReply(a, { ...cfg, rand: () => 0.4 }), 'Have a look at this one. #TheRiftBorn #DigiNFTs');
+  assert.equal(finishReply(a, { ...cfg, rand: () => 0.6 }), 'Have a look at this one. #TheRiftBorn');
+  assert.equal(finishReply({ reply: 'The Rift Born are stirring again.', tags: ['#Boomerverse'] }, { ...cfg, rand: () => 0.4 }), '#TheRiftBorn are stirring again. #Boomerverse');
+  for (let i = 0; i < 500; i++) {
+    const t = tagsIn(finishReply(a, cfg));
+    assert.ok(t.includes('#TheRiftBorn') && t.length <= 2, t.join(' '));
+  }
+});
+
+test('fewer tags: the 280 limit still holds, with and without the tag in the words', () => {
+  const long = 'The Rift Born ' + 'word '.repeat(80).trim() + '.';
+  for (const cfg of [{ extraMax: 0 }, { extraMax: 1, limit: QUOTE_LIMIT }]) {
+    const out = finishReply({ reply: long, tags: ['#DigiNFTs'] }, { ...TAGS, inline: true, ...cfg });
+    assert.ok(out.length <= (cfg.limit || 280), `length ${out.length}`);
+    assert.ok(out.startsWith('#TheRiftBorn word'));
+  }
+});
+
+test('fewer tags: through the bot, a reply has one tag and a quote has at most two', async () => {
+  const ai = fakeAi([A('Veyra is awake and so am I.'), A('Worth a look, this.')]);
+  const { tg, crier } = await dropped({ ai });
+  await crier.handleUpdate(dm(MEMBER, START_REPLY));
+  assert.match(tg.of('sendMessage').at(-1).text, /<code>Veyra is awake and so am I\. #TheRiftBorn<\/code>/);
+  await crier.handleUpdate(dm(MEMBER, START_QUOTE));
+  assert.match(tg.of('sendMessage').at(-1).text, /<code>Worth a look, this\. #TheRiftBorn #DigiNFTs<\/code>/);
 });
